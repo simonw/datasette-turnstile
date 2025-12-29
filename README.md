@@ -5,7 +5,7 @@
 [![Tests](https://github.com/simonw/datasette-turnstile/actions/workflows/test.yml/badge.svg)](https://github.com/simonw/datasette-turnstile/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/simonw/datasette-turnstile/blob/main/LICENSE)
 
-Integrate CAPTCHAs powered by Cloudflare Turnstile
+Protect Datasette paths with Cloudflare Turnstile challenges.
 
 ## Installation
 
@@ -13,19 +13,76 @@ Install this plugin in the same environment as Datasette.
 ```bash
 datasette install datasette-turnstile
 ```
-## Usage
 
-Usage instructions go here.
+## Configuration
+
+Configure the plugin in your `datasette.yaml`:
+
+```yaml
+plugins:
+  datasette-turnstile:
+    site_key: "0x4AAAAAAxxxxxxxxxxxxxxx"
+    secret_key:
+      $env: TURNSTILE_SECRET_KEY
+    protected_paths:
+      - "/admin/*"
+      - "/-/import-*"
+    exclude_patterns:
+      - "*.json"
+    cookie_max_age: 86400
+```
+
+### Configuration options
+
+- **`site_key`** (required): Your Turnstile site key from the Cloudflare dashboard
+- **`secret_key`** (required): Your Turnstile secret key (supports `$env` syntax)
+- **`protected_paths`** (required): List of URL patterns to protect
+- **`exclude_patterns`** (optional): Patterns to exclude from protection (e.g., `*.json`)
+- **`cookie_max_age`** (optional): Cookie lifetime in seconds (default: 86400 = 24 hours)
+- **`cookie_name`** (optional): Name of the verification cookie (default: `ds_turnstile`)
+
+### URL Pattern Matching
+
+Patterns use simple wildcard matching where `*` matches any characters:
+
+- `/admin/*` - Protects all paths under `/admin/`
+- `/-/import-*` - Protects `/-/import-csv`, `/-/import-json`, etc.
+- `/data?*&*&*` - Protects `/data` with 2+ query string parameters
+
+Use `?` in patterns to match against the full URL including query string. Without `?`, patterns only match the path.
+
+## How It Works
+
+1. When a user visits a protected path, they're redirected to `/-/turnstile`
+2. The challenge page displays a Cloudflare Turnstile widget
+3. Upon completing the challenge, the token is verified server-side
+4. On success, a signed cookie is set and the user is redirected to their original destination
+5. The cookie remains valid for 24 hours (configurable)
+
+### API Requests
+
+For requests with `Accept: application/json` header, the plugin returns a 403 JSON response instead of redirecting:
+
+```json
+{"error": "turnstile_required"}
+```
+
+Use `exclude_patterns: ["*.json"]` to exclude JSON endpoints from protection entirely.
 
 ## Development
 
-To set up this plugin locally, first checkout the code. You can confirm it is available like this:
+To set up this plugin locally, first checkout the code:
 ```bash
 cd datasette-turnstile
-# Confirm the plugin is visible
-uv run datasette plugins
+uv sync
 ```
+
 To run the tests:
 ```bash
 uv run pytest
+```
+
+To run Datasette with the plugin:
+```bash
+uv run datasette --memory
 ```
