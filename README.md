@@ -74,7 +74,6 @@ Use `exclude_patterns: ["*.json"]` to exclude JSON endpoints from protection ent
 To set up this plugin locally, first checkout the code:
 ```bash
 cd datasette-turnstile
-uv sync
 ```
 
 To run the tests:
@@ -82,7 +81,24 @@ To run the tests:
 uv run pytest
 ```
 
-To run Datasette with the plugin:
+Create a config file using [Turnstile test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/):
 ```bash
-uv run datasette --memory
+cat > datasette.yaml << 'EOF'
+plugins:
+  datasette-turnstile:
+    site_key: "1x00000000000000000000AA"
+    secret_key:
+      $env: TURNSTILE_SECRET_KEY
+    protected_paths:
+      - "/demo/example*
+EOF
+```
+Create an example database:
+```bash
+sqlite3 demo.db "CREATE TABLE example (id INTEGER PRIMARY KEY, name TEXT);"
+```
+
+Put the secret in an environment variable and run Datasette with the plugin:
+```bash
+TURNSTILE_SECRET_KEY='1x0000000000000000000000000000000AA' uv run datasette -c datasette.yaml demo.db
 ```
