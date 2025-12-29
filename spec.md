@@ -33,8 +33,8 @@ plugins:
 - [x] `verify_turnstile_token(secret_key, response_token, remote_ip)` - call Cloudflare API
 
 ### 3. Views (`views.py`)
-- [ ] `turnstile_challenge_page(request, datasette)` - GET `/-/turnstile`
-- [ ] `turnstile_verify(request, datasette)` - POST `/-/turnstile/verify`
+- [x] `turnstile_challenge_page(request, datasette)` - GET `/-/turnstile`
+- [x] `turnstile_verify(request, datasette)` - POST `/-/turnstile/verify`
 
 ### 4. Middleware (`middleware.py`)
 - [ ] `TurnstileMiddleware` class - ASGI wrapper
@@ -58,7 +58,7 @@ plugins:
 - [x] Project skeleton with pyproject.toml
 - [x] Path matching utilities with tests
 - [x] Cloudflare verification with tests
-- [ ] Challenge views with tests
+- [x] Challenge views with tests
 - [ ] ASGI middleware with tests
 - [ ] Hook registration
 - [ ] Template
