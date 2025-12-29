@@ -30,7 +30,7 @@ plugins:
 - [ ] `create_verified_cookie_value(datasette)` - create signed cookie
 
 ### 2. Turnstile Verification (`verification.py`)
-- [ ] `verify_turnstile_token(secret_key, response_token, remote_ip)` - call Cloudflare API
+- [x] `verify_turnstile_token(secret_key, response_token, remote_ip)` - call Cloudflare API
 
 ### 3. Views (`views.py`)
 - [ ] `turnstile_challenge_page(request, datasette)` - GET `/-/turnstile`
@@ -57,7 +57,7 @@ plugins:
 
 - [x] Project skeleton with pyproject.toml
 - [x] Path matching utilities with tests
-- [ ] Cloudflare verification with tests
+- [x] Cloudflare verification with tests
 - [ ] Challenge views with tests
 - [ ] ASGI middleware with tests
 - [ ] Hook registration
