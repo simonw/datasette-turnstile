@@ -37,7 +37,7 @@ plugins:
 - [x] `turnstile_verify(request, datasette)` - POST `/-/turnstile/verify`
 
 ### 4. Middleware (`middleware.py`)
-- [ ] `TurnstileMiddleware` class - ASGI wrapper
+- [x] `TurnstileMiddleware` class - ASGI wrapper
   - Check if path matches protected_paths
   - Check if path matches exclude_patterns (skip if so)
   - Check for valid verification cookie
@@ -45,13 +45,13 @@ plugins:
   - Return 403 JSON for API requests without valid cookie
 
 ### 5. Hook Registration (`__init__.py`)
-- [ ] `asgi_wrapper(datasette)` - register middleware
-- [ ] `register_routes()` - register challenge and verify routes
+- [x] `asgi_wrapper(datasette)` - register middleware
+- [x] `register_routes()` - register challenge and verify routes
 
 ### 6. Template (`templates/turnstile_challenge.html`)
-- [ ] Render Turnstile widget with site_key
-- [ ] Form posts to `/-/turnstile/verify`
-- [ ] Hidden `next` field for redirect after success
+- [x] Render Turnstile widget with site_key
+- [x] Form posts to `/-/turnstile/verify`
+- [x] Hidden `next` field for redirect after success
 
 ## Implementation Progress
 
@@ -59,7 +59,7 @@ plugins:
 - [x] Path matching utilities with tests
 - [x] Cloudflare verification with tests
 - [x] Challenge views with tests
-- [ ] ASGI middleware with tests
-- [ ] Hook registration
-- [ ] Template
-- [ ] Integration tests
+- [x] ASGI middleware with tests
+- [x] Hook registration
+- [x] Template
+- [x] Integration tests
