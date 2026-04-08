@@ -47,9 +47,32 @@ Patterns use simple wildcard matching where `*` matches any characters:
 
 - `/admin/*` - Protects all paths under `/admin/`
 - `/-/import-*` - Protects `/-/import-csv`, `/-/import-json`, etc.
-- `/data?*&*&*` - Protects `/data` with 2+ query string parameters
 
 Use `?` in patterns to match against the full URL including query string. Without `?`, patterns only match the path.
+
+#### Protecting URLs with query string parameters
+
+The `?` and `&` characters in patterns match literal `?` and `&` in URLs. This lets you protect pages based on the shape of their query string — useful for blocking automated crawlers that probe expensive API endpoints while leaving simple page views unprotected.
+
+- `/db/*?*&*` - Protects any table page with 2+ query string parameters (e.g. `/db/table?_sort=col&_size=100`)
+- `/db?sql=*` - Protects the arbitrary SQL query interface (note: only matches when `sql=` is the first parameter)
+
+A real-world example from [datasette.io](https://datasette.io/):
+
+```yaml
+protected_paths:
+  # Arbitrary SQL execution
+  - "/content?sql=*"
+  - "/content.json?sql=*"
+
+  # Multi-parameter table/API URLs (crawlers love these)
+  - "/content/*?*&*"
+  - "/content/*.json?*&*"
+  - "/legislators/*?*&*"
+  - "/legislators/*.json?*&*"
+```
+
+This protects expensive multi-facet queries like `/legislators/legislators?_facet=party&_facet=state` while leaving simple single-parameter pages like `/legislators/legislators?_sort=name` accessible without a challenge.
 
 ## How It Works
 
