@@ -1,6 +1,6 @@
 [project]
 name = "datasette-turnstile"
-version = "0.1a0"
+version = "0.1a1"
 description = "Integrate CAPTCHAs powered by Cloudflare Turnstile"
 readme = "README.md"
 authors = [{name = "Simon Willison"}]
@@ -10,7 +10,7 @@ classifiers=[
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "datasette>=1.0a20",
+    "datasette",
     "httpx>=0.28.1",
 ]
 
@@ -41,4 +41,3 @@ turnstile = "datasette_turnstile"
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-
