@@ -20,6 +20,11 @@ class TurnstileMiddleware:
             await self.app(scope, receive, send)
             return
 
+        # Skip protection for internal datasette.client requests
+        if self.datasette.in_client():
+            await self.app(scope, receive, send)
+            return
+
         config = self.datasette.plugin_config("datasette-turnstile") or {}
         protected_paths = config.get("protected_paths", [])
 

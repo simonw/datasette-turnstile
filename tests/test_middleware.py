@@ -1,3 +1,4 @@
+import httpx
 import pytest
 from datasette.app import Datasette
 
@@ -20,18 +21,27 @@ def datasette_with_turnstile():
     )
 
 
+async def get(ds, path, **kwargs):
+    """Make a request using httpx.ASGITransport to simulate external traffic."""
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=ds.app()),
+    ) as client:
+        url = f"http://localhost{path}"
+        return await client.get(url, **kwargs)
+
+
 @pytest.mark.asyncio
 async def test_unprotected_path_passes_through(datasette_with_turnstile):
     """Test that unprotected paths are not blocked."""
-    response = await datasette_with_turnstile.client.get("/")
+    response = await get(datasette_with_turnstile, "/")
     assert response.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_protected_path_redirects_to_challenge(datasette_with_turnstile):
     """Test that protected paths redirect to challenge when not verified."""
-    response = await datasette_with_turnstile.client.get(
-        "/admin/users", follow_redirects=False
+    response = await get(
+        datasette_with_turnstile, "/admin/users", follow_redirects=False
     )
     assert response.status_code == 302
     location = response.headers["location"]
@@ -48,10 +58,11 @@ async def test_verified_cookie_allows_access(datasette_with_turnstile):
         namespace="turnstile",
     )
 
-    response = await datasette_with_turnstile.client.get(
-        "/admin/users",
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=datasette_with_turnstile.app()),
         cookies={"ds_turnstile": cookie_value},
-    )
+    ) as client:
+        response = await client.get("http://localhost/admin/users")
     # Should not redirect - though may 404 since /admin doesn't exist
     assert response.status_code != 302
 
@@ -59,11 +70,13 @@ async def test_verified_cookie_allows_access(datasette_with_turnstile):
 @pytest.mark.asyncio
 async def test_invalid_cookie_redirects(datasette_with_turnstile):
     """Test that invalid cookie still redirects to challenge."""
-    response = await datasette_with_turnstile.client.get(
-        "/admin/users",
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=datasette_with_turnstile.app()),
         cookies={"ds_turnstile": "invalid-cookie-value"},
-        follow_redirects=False,
-    )
+    ) as client:
+        response = await client.get(
+            "http://localhost/admin/users", follow_redirects=False
+        )
     assert response.status_code == 302
     assert "/-/turnstile" in response.headers["location"]
 
@@ -71,8 +84,8 @@ async def test_invalid_cookie_redirects(datasette_with_turnstile):
 @pytest.mark.asyncio
 async def test_json_excluded_passes_through(datasette_with_turnstile):
     """Test that excluded paths (*.json) are not blocked."""
-    response = await datasette_with_turnstile.client.get(
-        "/admin/data.json", follow_redirects=False
+    response = await get(
+        datasette_with_turnstile, "/admin/data.json", follow_redirects=False
     )
     # Should not redirect to challenge (though may 404)
     assert response.status_code != 302
@@ -81,8 +94,10 @@ async def test_json_excluded_passes_through(datasette_with_turnstile):
 @pytest.mark.asyncio
 async def test_preserves_query_string_in_next(datasette_with_turnstile):
     """Test that query string is preserved in next parameter."""
-    response = await datasette_with_turnstile.client.get(
-        "/admin/users?page=2&sort=name", follow_redirects=False
+    response = await get(
+        datasette_with_turnstile,
+        "/admin/users?page=2&sort=name",
+        follow_redirects=False,
     )
     assert response.status_code == 302
     location = response.headers["location"]
@@ -94,7 +109,7 @@ async def test_preserves_query_string_in_next(datasette_with_turnstile):
 async def test_no_config_passes_through():
     """Test that plugin does nothing when not configured."""
     ds = Datasette(memory=True)
-    response = await ds.client.get("/admin/users")
+    response = await get(ds, "/admin/users")
     # Should not redirect (though may 404)
     assert response.status_code != 302
 
@@ -114,7 +129,7 @@ async def test_empty_protected_paths_passes_through():
             }
         },
     )
-    response = await ds.client.get("/admin/users")
+    response = await get(ds, "/admin/users")
     # Should not redirect
     assert response.status_code != 302
 
@@ -134,7 +149,8 @@ async def test_json_accept_header_returns_403():
             }
         },
     )
-    response = await ds.client.get(
+    response = await get(
+        ds,
         "/admin/users",
         headers={"Accept": "application/json"},
     )
@@ -161,13 +177,33 @@ async def test_query_string_pattern_matching():
     )
 
     # Should be protected (3 params = 2 ampersands)
-    response = await ds.client.get(
-        "/data?a=1&b=2&c=3", follow_redirects=False
-    )
+    response = await get(ds, "/data?a=1&b=2&c=3", follow_redirects=False)
     assert response.status_code == 302
 
     # Should NOT be protected (2 params = 1 ampersand)
-    response = await ds.client.get(
-        "/data?a=1&b=2", follow_redirects=False
+    response = await get(ds, "/data?a=1&b=2", follow_redirects=False)
+    assert response.status_code != 302
+
+
+@pytest.mark.asyncio
+async def test_internal_client_requests_bypass_protection():
+    """Test that internal datasette.client requests skip turnstile protection."""
+    ds = Datasette(
+        memory=True,
+        metadata={
+            "plugins": {
+                "datasette-turnstile": {
+                    "site_key": "test-site-key",
+                    "secret_key": "test-secret-key",
+                    "protected_paths": ["/admin/*"],
+                }
+            }
+        },
     )
+    # External request should be blocked
+    response = await get(ds, "/admin/users", follow_redirects=False)
+    assert response.status_code == 302
+
+    # Internal datasette.client request should bypass protection
+    response = await ds.client.get("/admin/users", follow_redirects=False)
     assert response.status_code != 302
