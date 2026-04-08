@@ -1,6 +1,6 @@
 [project]
 name = "datasette-turnstile"
-version = "0.1a1"
+version = "0.1a2"
 description = "Integrate CAPTCHAs powered by Cloudflare Turnstile"
 readme = "README.md"
 authors = [{name = "Simon Willison"}]
@@ -11,7 +11,7 @@ classifiers=[
 requires-python = ">=3.10"
 dependencies = [
     "datasette",
-    "httpx>=0.28.1",
+    "httpx",
 ]
 
 [dependency-groups]
